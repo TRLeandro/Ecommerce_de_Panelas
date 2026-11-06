@@ -2,31 +2,37 @@ package leepans.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 
 @Entity
 public class Endereco extends DefaultEntity {
 
-    @Column(name = "rua", nullable = false)
-    private String rua;
+    @Column(name = "logradouro", nullable = false)
+    private String logradouro;
 
     @Column(name = "numero", nullable = false)
     private String numero;
 
-    @Column(name = "cidade", nullable = false)
-    private String cidade;
+    @Column(name = "complemento")
+    private String complemento;
 
-    @Column(name = "estado", nullable = false)
-    private String estado;
+    @Column(name = "bairro", nullable = false)
+    private String bairro;
 
     @Column(name = "cep", nullable = false)
     private String cep;
 
-    public String getRua() {
-        return rua;
+    @ManyToOne
+    @JoinColumn(name = "id_cidade", nullable = false)
+    private Cidade cidade;
+
+    public String getLogradouro() {
+        return logradouro;
     }
 
-    public void setRua(String rua) {
-        this.rua = rua;
+    public void setLogradouro(String logradouro) {
+        this.logradouro = logradouro;
     }
 
     public String getNumero() {
@@ -37,20 +43,20 @@ public class Endereco extends DefaultEntity {
         this.numero = numero;
     }
 
-    public String getCidade() {
-        return cidade;
+    public String getComplemento() {
+        return complemento;
     }
 
-    public void setCidade(String cidade) {
-        this.cidade = cidade;
+    public void setComplemento(String complemento) {
+        this.complemento = complemento;
     }
 
-    public String getEstado() {
-        return estado;
+    public String getBairro() {
+        return bairro;
     }
 
-    public void setEstado(String estado) {
-        this.estado = estado;
+    public void setBairro(String bairro) {
+        this.bairro = bairro;
     }
 
     public String getCep() {
@@ -60,5 +66,12 @@ public class Endereco extends DefaultEntity {
     public void setCep(String cep) {
         this.cep = cep;
     }
-    
+
+    public Cidade getCidade() {
+        return cidade;
+    }
+
+    public void setCidade(Cidade cidade) {
+        this.cidade = cidade;
+    }
 }

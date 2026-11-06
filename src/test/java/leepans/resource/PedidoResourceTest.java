@@ -162,7 +162,7 @@ class PedidoResourceTest {
         return """
                 {
                   "itens":[{"idPanela":1,"quantidade":1,"valorUnitario":100.0}],
-                  "endereco":{"rua":"Rua A","numero":"10","cidade":"Palmas","estado":"TO","cep":"77000-000"},
+                  "endereco":{"logradouro":"Rua A","numero":"10","bairro":"Centro","cep":"77000-000","idCidade":1},
                   "pagamento":"PIX"
                 }
                 """;
@@ -182,7 +182,10 @@ class PedidoResourceTest {
 
         Endereco e = new Endereco();
         e.setId(1L);
-        e.setCidade("Palmas");
+        leepans.model.Cidade c = new leepans.model.Cidade();
+        c.setId(1L);
+        c.setNome("Palmas");
+        e.setCidade(c);
         p.setEndereco(e);
 
         return p;

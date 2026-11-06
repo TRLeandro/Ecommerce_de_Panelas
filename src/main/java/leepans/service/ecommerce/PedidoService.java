@@ -300,29 +300,30 @@ public class PedidoService implements PedidoServiceInter {
         }
 
         // Validar campos obrigatórios do endereço
-        if (endereco.getRua() == null || endereco.getRua().isBlank()) {
-            throw new ValidationException("A rua do endereço é obrigatória.", "endereco.rua");
+        if (endereco.getLogradouro() == null || endereco.getLogradouro().isBlank()) {
+            throw new ValidationException("O logradouro do endereço é obrigatório.", "endereco.logradouro");
         }
         if (endereco.getNumero() == null || endereco.getNumero().isBlank()) {
             throw new ValidationException("O número do endereço é obrigatório.", "endereco.numero");
         }
-        if (endereco.getCidade() == null || endereco.getCidade().isBlank()) {
-            throw new ValidationException("A cidade do endereço é obrigatória.", "endereco.cidade");
-        }
-        if (endereco.getEstado() == null || endereco.getEstado().isBlank()) {
-            throw new ValidationException("O estado do endereço é obrigatório.", "endereco.estado");
+        if (endereco.getBairro() == null || endereco.getBairro().isBlank()) {
+            throw new ValidationException("O bairro do endereço é obrigatório.", "endereco.bairro");
         }
         if (endereco.getCep() == null || endereco.getCep().isBlank()) {
             throw new ValidationException("O CEP do endereço é obrigatório.", "endereco.cep");
         }
+        if (endereco.getCidade() == null || endereco.getCidade().getId() == null) {
+            throw new ValidationException("A cidade do endereço é obrigatória.", "endereco.cidade");
+        }
 
         // Verificar se o endereço já existe no banco de dados
         Endereco enderecoExistente = enderecoRepository.findByAllFields(
-                endereco.getRua(),
+                endereco.getLogradouro(),
                 endereco.getNumero(),
-                endereco.getCidade(),
-                endereco.getEstado(),
-                endereco.getCep());
+                endereco.getComplemento(),
+                endereco.getBairro(),
+                endereco.getCep(),
+                endereco.getCidade().getId());
 
         if (enderecoExistente != null) {
             // Se o endereço já existe, usar o existente

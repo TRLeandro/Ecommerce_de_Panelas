@@ -31,6 +31,9 @@ public class UsuarioService implements UsuarioServiceInter {
     private EnderecoRepository enderecoRepository;
 
     @Inject
+    private EnderecoService enderecoService;
+
+    @Inject
     private HashService hashService;
 
     @Inject
@@ -80,8 +83,10 @@ public class UsuarioService implements UsuarioServiceInter {
         usuario.setSenhaHash(hashService.Argon2(dto.senha()));
         usuario.setPerfil(Perfil.CLIENTE);
         Endereco endereco = EnderecoMapper.toEntity(dto.endereco());
+        if (endereco != null) {
+            endereco = enderecoService.create(endereco);
+        }
         usuario.setEndereco(endereco);
-        enderecoRepository.persist(endereco);
         repository.persist(usuario);
         return usuario;
     }
@@ -95,8 +100,10 @@ public class UsuarioService implements UsuarioServiceInter {
         usuario.setSenhaHash(hashService.Argon2(dto.senha()));
         usuario.setPerfil(Perfil.ADMIN);
         Endereco endereco = EnderecoMapper.toEntity(dto.endereco());
+        if (endereco != null) {
+            endereco = enderecoService.create(endereco);
+        }
         usuario.setEndereco(endereco);
-        enderecoRepository.persist(endereco);
         repository.persist(usuario);
         return usuario;
     }
@@ -110,8 +117,10 @@ public class UsuarioService implements UsuarioServiceInter {
         usuario.setSenhaHash(hashService.Argon2(dto.senha()));
         usuario.setPerfil(Perfil.FUNCIONARIO);
         Endereco endereco = EnderecoMapper.toEntity(dto.endereco());
+        if (endereco != null) {
+            endereco = enderecoService.create(endereco);
+        }
         usuario.setEndereco(endereco);
-        enderecoRepository.persist(endereco);
         repository.persist(usuario);
         return usuario;
     }
@@ -124,7 +133,7 @@ public class UsuarioService implements UsuarioServiceInter {
         usuario.setSobrenome(dto.sobrenome());
         if(dto.endereco() != null){
             Endereco novoEndereco = EnderecoMapper.toEntity(dto.endereco());
-            enderecoRepository.persist(novoEndereco);
+            novoEndereco = enderecoService.create(novoEndereco);
             usuario.setEndereco(novoEndereco);
         }
         repository.persist(usuario);
@@ -135,7 +144,7 @@ public class UsuarioService implements UsuarioServiceInter {
     public void setEndereco(String login, EnderecoRequestDTO endereco) {
         Usuario usuario = repository.findByLogin(login).firstResult();
         Endereco novoEndereco = EnderecoMapper.toEntity(endereco);
-        enderecoRepository.persist(novoEndereco);
+        novoEndereco = enderecoService.create(novoEndereco);
         usuario.setEndereco(novoEndereco);
         repository.persist(usuario);
     }

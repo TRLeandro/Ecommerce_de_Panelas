@@ -18,7 +18,10 @@ import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
+import leepans.model.Cidade;
 import leepans.model.Endereco;
+import leepans.model.Estado;
+import leepans.model.Regiao;
 import leepans.service.ecommerce.EnderecoService;
 import leepans.support.TestJwt;
 
@@ -43,7 +46,7 @@ class EnderecoResourceTest {
         given().accept(ContentType.JSON).when().get(ADMIN).then()
                 .statusCode(200)
                 .body("size()", is(1))
-                .body("[0].cidade", equalTo("Palmas"));
+                .body("[0].cidade.nome", equalTo("Palmas"));
     }
 
     @Test
@@ -63,7 +66,7 @@ class EnderecoResourceTest {
 
         given().accept(ContentType.JSON).when().get("/enderecos/usuarios/me").then()
                 .statusCode(200)
-                .body("cidade", equalTo("Palmas"));
+                .body("cidade.nome", equalTo("Palmas"));
     }
 
     @Test
@@ -127,11 +130,12 @@ class EnderecoResourceTest {
     private static String enderecoPayload() {
         return """
                 {
-                  "rua":"Rua A",
+                  "logradouro":"Rua A",
                   "numero":"100",
-                  "cidade":"Palmas",
-                  "estado":"TO",
-                  "cep":"77000-000"
+                  "complemento":"Apto 1",
+                  "bairro":"Centro",
+                  "cep":"77000-000",
+                  "idCidade":1
                 }
                 """;
     }
@@ -139,11 +143,28 @@ class EnderecoResourceTest {
     private static Endereco endereco(Long id) {
         Endereco e = new Endereco();
         e.setId(id);
-        e.setRua("Rua A");
+        e.setLogradouro("Rua A");
         e.setNumero("100");
-        e.setCidade("Palmas");
-        e.setEstado("TO");
+        e.setComplemento("Apto 1");
+        e.setBairro("Centro");
         e.setCep("77000-000");
+
+        Regiao r = new Regiao();
+        r.setId(1L);
+        r.setNome("Norte");
+
+        Estado est = new Estado();
+        est.setId(1L);
+        est.setNome("Tocantins");
+        est.setSigla("TO");
+        est.setRegiao(r);
+
+        Cidade c = new Cidade();
+        c.setId(1L);
+        c.setNome("Palmas");
+        c.setEstado(est);
+
+        e.setCidade(c);
         return e;
     }
 }

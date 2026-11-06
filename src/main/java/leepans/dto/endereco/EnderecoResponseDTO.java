@@ -2,13 +2,16 @@ package leepans.dto.endereco;
 
 import java.time.LocalDateTime;
 
+import leepans.dto.cidade.CidadeResponseDTO;
+
 public record EnderecoResponseDTO(
         Long id,
-        String rua,
+        String logradouro,
         String numero,
-        String cidade,
-        String estado,
+        String complemento,
+        String bairro,
         String cep,
+        CidadeResponseDTO cidade,
         LocalDateTime dataCadastro,
         Integer version
 ) {

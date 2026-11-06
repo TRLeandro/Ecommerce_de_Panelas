@@ -2,6 +2,7 @@ package leepans.mapper;
 
 import leepans.dto.endereco.EnderecoRequestDTO;
 import leepans.dto.endereco.EnderecoResponseDTO;
+import leepans.model.Cidade;
 import leepans.model.Endereco;
 
 public class EnderecoMapper {
@@ -10,11 +11,16 @@ public class EnderecoMapper {
         if (dto == null) return null;
 
         Endereco endereco = new Endereco();
-        endereco.setRua(dto.rua());
+        endereco.setLogradouro(dto.logradouro());
         endereco.setNumero(dto.numero());
-        endereco.setCidade(dto.cidade());
-        endereco.setEstado(dto.estado());
+        endereco.setComplemento(dto.complemento());
+        endereco.setBairro(dto.bairro());
         endereco.setCep(dto.cep());
+        if (dto.idCidade() != null) {
+            Cidade cidade = new Cidade();
+            cidade.setId(dto.idCidade());
+            endereco.setCidade(cidade);
+        }
         if (dto.version() != null) {
             endereco.setVersion(dto.version());
         }
@@ -26,11 +32,12 @@ public class EnderecoMapper {
 
         return new EnderecoResponseDTO(
                 endereco.getId(),
-                endereco.getRua(),
+                endereco.getLogradouro(),
                 endereco.getNumero(),
-                endereco.getCidade(),
-                endereco.getEstado(),
+                endereco.getComplemento(),
+                endereco.getBairro(),
                 endereco.getCep(),
+                CidadeMapper.toResponseDTO(endereco.getCidade()),
                 endereco.getDataCadastro(),
                 endereco.getVersion()
         );

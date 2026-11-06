@@ -8,7 +8,9 @@ import jakarta.transaction.Transactional;
 import leepans.dto.endereco.EnderecoRequestDTO;
 import leepans.exception.ResourceNotFoundException;
 import leepans.exception.ValidationException;
+import leepans.model.Cidade;
 import leepans.model.Endereco;
+import leepans.repository.CidadeRepository;
 import leepans.repository.EnderecoRepository;
 
 @ApplicationScoped
@@ -16,6 +18,9 @@ public class EnderecoService implements EnderecoServiceInter {
 
     @Inject
     EnderecoRepository repository;
+
+    @Inject
+    CidadeRepository cidadeRepository;
 
     @Override
     public List<Endereco> findAll() {
@@ -49,6 +54,13 @@ public class EnderecoService implements EnderecoServiceInter {
     @Override
     @Transactional
     public Endereco create(Endereco endereco) {
+        if (endereco.getCidade() != null && endereco.getCidade().getId() != null) {
+            Cidade cidade = cidadeRepository.findById(endereco.getCidade().getId());
+            if (cidade == null) {
+                throw new ResourceNotFoundException("Cidade", endereco.getCidade().getId());
+            }
+            endereco.setCidade(cidade);
+        }
         repository.persist(endereco);
         return endereco;
     }
@@ -65,11 +77,20 @@ public class EnderecoService implements EnderecoServiceInter {
                     "version");
         }
 
-        endereco.setRua(dto.rua());
+        endereco.setLogradouro(dto.logradouro());
         endereco.setNumero(dto.numero());
-        endereco.setCidade(dto.cidade());
-        endereco.setEstado(dto.estado());
+        endereco.setComplemento(dto.complemento());
+        endereco.setBairro(dto.bairro());
         endereco.setCep(dto.cep());
+
+        if (dto.idCidade() != null) {
+            Cidade cidade = cidadeRepository.findById(dto.idCidade());
+            if (cidade == null) {
+                throw new ResourceNotFoundException("Cidade", dto.idCidade());
+            }
+            endereco.setCidade(cidade);
+        }
+
         repository.persist(endereco);
     }
 

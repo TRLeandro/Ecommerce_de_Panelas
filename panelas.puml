@@ -83,11 +83,24 @@ enum Perfil{
 }
 
 class Endereco{
-- rua : String
+- logradouro : String
 - numero : String
-- cidade : String
-- estado : String
+- complemento: String
+- bairro: String
 - cep : String
+}
+
+class Cidade{
+ - nome: String
+}
+
+class Estado {
+ - nome: String
+ - sigla: String
+}
+
+class Regiao {
+ - nome: String
 }
 
 class ListaDesejo{
@@ -203,5 +216,9 @@ Pagamento <|-- CartaoCredito
 Pagamento <|-- CartaoDebito
 Pagamento <|-- Pix
 Pagamento <|-- Boleto
+
+Endereco "*" --> "1" Cidade
+Cidade "*" --> "1" Estado
+Estado "*" --> "1" Regiao
 
 @enduml
