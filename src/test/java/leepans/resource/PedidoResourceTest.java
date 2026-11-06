@@ -125,7 +125,7 @@ class PedidoResourceTest {
     @Test
     @TestJwt
     void criar_deveRetornar201() {
-        when(service.create(any(), eq(TestJwt.LOGIN), any(), any())).thenReturn(pedido(5L));
+        when(service.create(any(), eq(TestJwt.LOGIN), any(), any(), any())).thenReturn(pedido(5L));
 
         given()
                 .contentType(ContentType.JSON)
@@ -161,7 +161,7 @@ class PedidoResourceTest {
     private static String pedidoPayload() {
         return """
                 {
-                  "itens":[{"idPanela":1,"quantidade":1,"valorUnitario":100.0}],
+                  "itens":[{"idPanela":1,"quantidade":1}],
                   "endereco":{"logradouro":"Rua A","numero":"10","bairro":"Centro","cep":"77000-000","idCidade":1},
                   "pagamento":"PIX"
                 }

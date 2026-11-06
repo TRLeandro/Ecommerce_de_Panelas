@@ -6,11 +6,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import leepans.dto.pedido.PedidoRequestDTO;
 import leepans.dto.pedido.PedidoResponseDTO;
-import leepans.exception.ValidationException;
 import leepans.model.ItemPedido;
 import leepans.model.Pedido;
 import leepans.model.StatusPedido;
-import leepans.repository.CupomDescontoRepository;
 
 @ApplicationScoped
 public class PedidoMapper {
@@ -24,9 +22,6 @@ public class PedidoMapper {
     @Inject
     PagamentoMapper pagamentoMapper;
 
-    @Inject
-    CupomDescontoRepository cupomRepository;
-
     public Pedido toEntity(PedidoRequestDTO dto) {
         if (dto == null) return null;
 
@@ -34,21 +29,7 @@ public class PedidoMapper {
         List<ItemPedido> itens = dto.itens().stream()
                 .map(itemPedidoMapper::toEntity)
                 .toList();
-        
-        // Validar e mapear cupom desconto
-        if (dto.codigoCupomDesconto() != null && !dto.codigoCupomDesconto().isBlank()) {
-            String codigoCupom = dto.codigoCupomDesconto().trim();
-            var cupomResult = cupomRepository.findByCodigo(codigoCupom).firstResult();
-            
-            if (cupomResult == null) {
-                throw new ValidationException(
-                        "Cupom de desconto com código '" + codigoCupom + "' não encontrado.",
-                        "codigoCupomDesconto"
-                );
-            }
-            
-            pedido.setCupomDesconto(cupomResult);
-        }
+
 
         if (dto.version() != null) {
             pedido.setVersion(dto.version());

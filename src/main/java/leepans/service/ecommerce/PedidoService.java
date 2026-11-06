@@ -8,7 +8,6 @@ import java.util.List;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import leepans.exception.BusinessRuleViolationException;
 import leepans.exception.ResourceNotFoundException;
 import leepans.exception.ValidationException;
 import leepans.model.Boleto;
@@ -81,6 +80,16 @@ public class PedidoService implements PedidoServiceInter {
     }
 
     @Override
+    public Pedido findByIdDoUsuario(Long id, String login) {
+        Pedido pedido = repository.findByIdDoUsuario(id, login);
+        if (pedido == null) {
+            // Mesma resposta para "não existe" e "é de outro usuário": não revela a existência do ID.
+            throw new ResourceNotFoundException("Pedido", id);
+        }
+        return pedido;
+    }
+
+    @Override
     public List<Pedido> findCompras(String usuarioLogin, StatusPedido status) {
         return repository.findComprasUsuario(usuarioLogin, status).list();
     }
@@ -107,10 +116,16 @@ public class PedidoService implements PedidoServiceInter {
 
     @Override
     @Transactional
-    public Pedido create(Pedido pedido, String login, Endereco endereco, TipoPagamento tipoPagamento) {
+    public Pedido create(Pedido pedido, String login, Endereco endereco, TipoPagamento tipoPagamento,
+            String codigoCupom) {
         // Validar itens do pedido
         try {
             validarItens(pedido.getItens());
+
+            // O preço vem sempre do catálogo, nunca do cliente
+            pedido.getItens().forEach(item -> item.setValorUnitario(item.getPanela().getPreco()));
+
+            pedido.setCupomDesconto(buscarCupomComTrava(codigoCupom));
 
             // Calcular valor bruto
             BigDecimal valorBruto = calcularValorBruto(pedido.getItens());
@@ -216,7 +231,7 @@ public class PedidoService implements PedidoServiceInter {
     /**
      * Valida os itens do pedido
      */
-    private void validarItens(List<ItemPedido> itens) throws BusinessRuleViolationException, ValidationException {
+    private void validarItens(List<ItemPedido> itens) {
         if (itens == null || itens.isEmpty()) {
             throw new ValidationException("O pedido deve conter pelo menos um item.", "itens");
         }
@@ -225,13 +240,23 @@ public class PedidoService implements PedidoServiceInter {
             if (item.getQuantidade() == null || item.getQuantidade() <= 0) {
                 throw new ValidationException("A quantidade de cada item deve ser maior que zero.", "quantidade");
             }
-            if (item.getValorUnitario() == null || item.getValorUnitario().compareTo(BigDecimal.ZERO) < 0) {
-                throw new ValidationException("O valor unitário não pode ser negativo.", "valorUnitario");
-            } else if (item.getValorUnitario().compareTo(item.getPanela().getPreco()) != 0) {
-                throw new BusinessRuleViolationException("O valor unitário está diferente do valor da panela",
-                        "valorUnitario");
+            if (item.getPanela() == null) {
+                throw new ValidationException("Panela não encontrada.", "idPanela");
             }
         }
+    }
+
+    private CupomDesconto buscarCupomComTrava(String codigoCupom) {
+        if (codigoCupom == null || codigoCupom.isBlank()) {
+            return null;
+        }
+        CupomDesconto cupom = cupomRepository.findByCodigoParaAtualizacao(codigoCupom.trim());
+        if (cupom == null) {
+            throw new ValidationException(
+                    "Cupom de desconto com código '" + codigoCupom.trim() + "' não encontrado.",
+                    "codigoCupomDesconto");
+        }
+        return cupom;
     }
 
     /**
@@ -277,7 +302,6 @@ public class PedidoService implements PedidoServiceInter {
             // cupomDescontoService.decrementarQuantidade(cupomDesconto);
             if (cupomDesconto.getQuantidadeDisponivel() > 0) {
                 cupomDesconto.setQuantidadeDisponivel(cupomDesconto.getQuantidadeDisponivel() - 1);
-                cupomRepository.getEntityManager().merge(cupomDesconto);
             }
             return desconto;
         }

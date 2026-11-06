@@ -10,6 +10,9 @@ import leepans.model.StatusPedido;
 public class PedidoRepository implements PanacheRepository<Pedido> {
 
 
+    public Pedido findByIdDoUsuario(Long id, String login) {
+        return find("id = ?1 AND usuario.login = ?2", id, login).firstResult();
+    }
 
     public PanacheQuery<Pedido> findByUsuarioId(Long usuarioId) {
         return find("SELECT p FROM Pedido p WHERE p.usuario.id = ?1", usuarioId);

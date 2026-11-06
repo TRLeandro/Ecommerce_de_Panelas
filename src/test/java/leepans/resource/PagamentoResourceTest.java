@@ -6,7 +6,9 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
@@ -22,6 +24,7 @@ import io.restassured.http.ContentType;
 import leepans.dto.pagamento.BoletoRequestDTO;
 import leepans.dto.pagamento.CartaoRequestDTO;
 import leepans.dto.pagamento.PixRequestDTO;
+import leepans.exception.ResourceNotFoundException;
 import leepans.model.Pagamento;
 import leepans.model.Pedido;
 import leepans.model.Pix;
@@ -74,6 +77,30 @@ class PagamentoResourceTest {
                 .put(BASE + "/cartao/1")
                 .then()
                 .statusCode(204);
+    }
+
+    @Test
+    @TestJwt
+    void completarCartao_deveRetornar404ParaPagamentoDeOutroUsuario() {
+        when(service.findByIdDoUsuario(1L, TestJwt.LOGIN)).thenThrow(new ResourceNotFoundException("Pagamento", 1L));
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "numero":"4111111111111111",
+                          "titular":"Titular Teste",
+                          "validade":"2030-12-31",
+                          "codigoSeguranca":"123",
+                          "isCredito":true
+                        }
+                        """)
+                .when()
+                .put(BASE + "/cartao/1")
+                .then()
+                .statusCode(404);
+
+        verify(service, never()).completeInfo(eq(1L), any(CartaoRequestDTO.class));
     }
 
     @Test

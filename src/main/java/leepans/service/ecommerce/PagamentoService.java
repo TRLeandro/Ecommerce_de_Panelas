@@ -3,6 +3,7 @@ package leepans.service.ecommerce;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -51,6 +52,16 @@ public class PagamentoService implements PagamentoServiceInter {
     @Override
     public Pagamento findById(Long id) {
         return repository.findById(id);
+    }
+
+    @Override
+    public Pagamento findByIdDoUsuario(Long id, String login) {
+        Pagamento pagamento = repository.findByIdDoUsuario(id, login);
+        if (pagamento == null) {
+            // Mesma resposta para "não existe" e "é de outro usuário": não revela a existência do ID.
+            throw new ResourceNotFoundException("Pagamento", id);
+        }
+        return pagamento;
     }
 
     @Override
@@ -194,7 +205,7 @@ public class PagamentoService implements PagamentoServiceInter {
     public void setStatus(Long id, PagamentoPatchDTO dto) {
         Pagamento pagamento = repository.findById(id);
 
-        if (pagamento.getVersion() != dto.version()) {
+        if (!Objects.equals(pagamento.getVersion(), dto.version())) {
             throw new OptimisticLockException(
                     "Conflito de concorrência: o pagamento foi alterado por outra transação.");
         }

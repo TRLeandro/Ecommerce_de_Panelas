@@ -135,7 +135,8 @@ public class PedidoResource {
     public Response create(@Valid PedidoRequestDTO dto) {
         String login = jwt.getClaim("upn");
         Endereco endereco = EnderecoMapper.toEntity(dto.endereco());
-        Pedido pedido = service.create(pedidoMapper.toEntity(dto), login, endereco, dto.pagamento());
+        Pedido pedido = service.create(pedidoMapper.toEntity(dto), login, endereco, dto.pagamento(),
+                dto.codigoCupomDesconto());
         return Response.status(201)
                 .entity(pedidoMapper.toResponse(pedido))
                 .build();

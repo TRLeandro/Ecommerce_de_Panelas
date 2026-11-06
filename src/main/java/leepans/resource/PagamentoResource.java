@@ -15,8 +15,10 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.SecurityContext;
 import leepans.dto.pagamento.BoletoRequestDTO;
 import leepans.dto.pagamento.CartaoRequestDTO;
 import leepans.dto.pagamento.PagamentoEcommerceDTO;
@@ -42,6 +44,16 @@ public class PagamentoResource {
     @Inject
     JsonWebToken jwt;
 
+    @Context
+    SecurityContext securityContext;
+
+    /** ADMIN e FUNCIONARIO acessam qualquer ID; os demais só os próprios pagamentos. */
+    private void verificarAcesso(Long id) {
+        if (!securityContext.isUserInRole("ADMIN") && !securityContext.isUserInRole("FUNCIONARIO")) {
+            service.findByIdDoUsuario(id, jwt.getClaim("upn"));
+        }
+    }
+
     @PUT
     @Path("/admin/processar/{id}")
     @RolesAllowed({ "ADMIN", "FUNCIONARIO" })
@@ -54,6 +66,7 @@ public class PagamentoResource {
     @Path("/cartao/{id}")
     @RolesAllowed({ "ADMIN", "FUNCIONARIO", "CLIENTE" })
     public Response completeInfoCartao(@PathParam("id") Long id, @Valid CartaoRequestDTO dto) {
+        verificarAcesso(id);
         service.completeInfo(id, dto);
         return Response.noContent().build();
     }
@@ -62,6 +75,7 @@ public class PagamentoResource {
     @Path("/boleto/{id}")
     @RolesAllowed({ "ADMIN", "FUNCIONARIO", "CLIENTE" })
     public Response completeInfoBoleto(@PathParam("id") Long id, @Valid BoletoRequestDTO dto) {
+        verificarAcesso(id);
         service.completeInfo(id, dto);
         return Response.noContent().build();
     }
@@ -70,6 +84,7 @@ public class PagamentoResource {
     @Path("/pix/{id}")
     @RolesAllowed({ "ADMIN", "FUNCIONARIO", "CLIENTE" })
     public Response completeInfoPix(@PathParam("id") Long id, @Valid PixRequestDTO dto) {
+        verificarAcesso(id);
         service.completeInfo(id, dto);
         return Response.noContent().build();
     }

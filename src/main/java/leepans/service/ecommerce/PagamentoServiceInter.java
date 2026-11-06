@@ -15,6 +15,8 @@ public interface PagamentoServiceInter {
 
     Pagamento findById(Long id);
 
+    Pagamento findByIdDoUsuario(Long id, String login);
+
     List<Pagamento> findByStatusPagamento(StatusPagamento statusPagamento);
 
     List<Pagamento> findByUsuario(String login);

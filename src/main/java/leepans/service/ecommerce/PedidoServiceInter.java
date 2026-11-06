@@ -13,6 +13,8 @@ public interface PedidoServiceInter {
 
     Pedido findById(Long id);
 
+    Pedido findByIdDoUsuario(Long id, String login);
+
     List<Pedido> findCompras(String usuarioLogin, StatusPedido status);
 
     List<Pedido> findCompras(String usuarioLogin);
@@ -23,7 +25,7 @@ public interface PedidoServiceInter {
 
     List<Pedido> findByEnderecoCidade(String cidade);
 
-    Pedido create(Pedido pedido, String login, Endereco endereco, TipoPagamento tipoPagamento);
+    Pedido create(Pedido pedido, String login, Endereco endereco, TipoPagamento tipoPagamento, String codigoCupom);
 
     void setStatus(Long id, StatusPedido status);
 

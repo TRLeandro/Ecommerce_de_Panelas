@@ -9,6 +9,10 @@ import leepans.model.StatusPagamento;
 @ApplicationScoped
 public class PagamentoRepository implements PanacheRepository<Pagamento> {
 
+    public Pagamento findByIdDoUsuario(Long id, String login) {
+        return find("id = ?1 AND pedido.usuario.login = ?2", id, login).firstResult();
+    }
+
     public PanacheQuery<Pagamento> findByStatusPagamento(StatusPagamento statusPagamento) {
         return find("statusPagamento", statusPagamento);
     }
