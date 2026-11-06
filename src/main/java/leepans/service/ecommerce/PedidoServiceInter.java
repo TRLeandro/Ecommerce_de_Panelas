@@ -26,5 +26,13 @@ public interface PedidoServiceInter {
 
     Pedido create(Pedido pedido, String login, Endereco endereco, String codigoCupom);
 
+    void iniciarSeparacao(Long id);
+
+    void marcarComoEnviado(Long id);
+
+    void marcarComoEntregue(Long id);
+
+    void cancelar(Long id);
+
     void delete(Long id);
 }

@@ -2,6 +2,7 @@ package leepans.service.ecommerce;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.LockModeType;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
 import leepans.dto.cupomDesconto.CupomDescontoRequestDTO;
@@ -82,15 +83,21 @@ public class CupomDescontoService implements CupomDescontoServiceInter {
 
     }
 
+    /** Devolve o uso do cupom. Quantidade nula significa cupom sem limite de usos. */
     @Transactional
-    public void decrementarQuantidade(CupomDesconto cupomDesconto) {
-        
+    public void incrementarQuantidade(CupomDesconto cupomDesconto) {
+        repository.getEntityManager().refresh(cupomDesconto, LockModeType.PESSIMISTIC_WRITE);
+        if (cupomDesconto.getQuantidadeDisponivel() != null) {
+            cupomDesconto.setQuantidadeDisponivel(cupomDesconto.getQuantidadeDisponivel() + 1);
+        }
     }
 
     @Transactional
-    public void incrementarQuantidade(CupomDesconto cupomDesconto) {
-        cupomDesconto.setQuantidadeDisponivel(cupomDesconto.getQuantidadeDisponivel() + 1);
-        repository.persist(cupomDesconto);
+    public void desativarSeEsgotado(Long id) {
+        CupomDesconto cupom = repository.findById(id, LockModeType.PESSIMISTIC_WRITE);
+        if (cupom.getQuantidadeDisponivel() != null && cupom.getQuantidadeDisponivel() == 0) {
+            cupom.setAtivo(false);
+        }
     }
 
     @Override

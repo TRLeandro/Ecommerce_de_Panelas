@@ -30,6 +30,7 @@ import leepans.exception.BadRequestException;
 import leepans.model.DadosBoleto;
 import leepans.model.DadosCartao;
 import leepans.model.DadosPix;
+import leepans.model.MetodoPagamento;
 
 /**
  * Simula um gateway de forma determinística, para testes e demonstração. As
@@ -72,11 +73,14 @@ public class GatewayFake implements GatewayPagamento {
 
     @Override
     public ResultadoCobranca criarCobranca(SolicitacaoCobranca solicitacao) {
-        ResultadoCobranca resultado = switch (solicitacao.metodo()) {
-            case CARTAO_CREDITO, CARTAO_DEBITO -> cobrarCartao(solicitacao);
-            case PIX -> gerarPix(solicitacao);
-            case BOLETO -> gerarBoleto(solicitacao);
-        };
+        ResultadoCobranca resultado;
+        if (solicitacao.metodo().isCartao()) {
+            resultado = cobrarCartao(solicitacao);
+        } else if (solicitacao.metodo() == MetodoPagamento.PIX) {
+            resultado = gerarPix(solicitacao);
+        } else {
+            resultado = gerarBoleto(solicitacao);
+        }
         cobrancas.put(resultado.gatewayPaymentId(), resultado.status());
         return resultado;
     }

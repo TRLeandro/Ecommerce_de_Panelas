@@ -4,8 +4,10 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import leepans.exception.BusinessRuleViolationException;
@@ -16,6 +18,7 @@ import leepans.model.CupomDesconto;
 import leepans.model.Endereco;
 import leepans.model.EnderecoEntrega;
 import leepans.model.ItemPedido;
+import leepans.model.Pagamento;
 import leepans.model.Pedido;
 import leepans.model.StatusPedido;
 import leepans.model.Usuario;
@@ -23,7 +26,10 @@ import leepans.repository.CidadeRepository;
 import leepans.repository.CupomDescontoRepository;
 import leepans.repository.ItemPedidoRepository;
 import leepans.repository.PedidoRepository;
-import leepans.service.auth.EmailService;
+import leepans.service.pagamento.evento.PedidoCanceladoEvent;
+import leepans.service.pagamento.evento.PedidoCriadoEvent;
+import leepans.service.pagamento.gateway.EstornoNegadoException;
+import leepans.service.pagamento.gateway.GatewayIndisponivelException;
 
 @ApplicationScoped
 public class PedidoService implements PedidoServiceInter {
@@ -44,7 +50,16 @@ public class PedidoService implements PedidoServiceInter {
     CidadeRepository cidadeRepository;
 
     @Inject
-    EmailService emailService;
+    PagamentoService pagamentoService;
+
+    @Inject
+    CupomDescontoService cupomDescontoService;
+
+    @Inject
+    Event<PedidoCriadoEvent> pedidoCriado;
+
+    @Inject
+    Event<PedidoCanceladoEvent> pedidoCancelado;
 
     @Override
     public List<Pedido> findAll() {
@@ -120,9 +135,55 @@ public class PedidoService implements PedidoServiceInter {
         // TODO estoque: reservar os itens do pedido
         repository.persist(pedido);
 
-        emailService.sendOrderConfirmedEmail(pedido.getUsuario().getNome(), pedido.getId().toString());
+        pedidoCriado.fire(new PedidoCriadoEvent(pedido.getId()));
 
         return pedido;
+    }
+
+    @Override
+    @Transactional
+    public void iniciarSeparacao(Long id) {
+        findById(id).iniciarSeparacao();
+    }
+
+    @Override
+    @Transactional
+    public void marcarComoEnviado(Long id) {
+        findById(id).marcarComoEnviado();
+    }
+
+    @Override
+    @Transactional
+    public void marcarComoEntregue(Long id) {
+        findById(id).marcarComoEntregue();
+    }
+
+    @Override
+    @Transactional(dontRollbackOn = { GatewayIndisponivelException.class, EstornoNegadoException.class })
+    public void cancelar(Long id) {
+        Pedido pedido = findById(id);
+        repository.travar(pedido);
+
+        // Antes de qualquer chamada ao gateway: nada de devolver dinheiro de pedido que não pode ser cancelado
+        if (!pedido.podeCancelar()) {
+            throw new BusinessRuleViolationException(
+                    "Não é possível cancelar um pedido com status " + pedido.getStatus() + ".", "status");
+        }
+
+        Optional<Pagamento> aprovado = pedido.pagamentoAprovado();
+        if (aprovado.isPresent()) {
+            // O estorno já cancela o pedido e devolve o cupom
+            pagamentoService.estornar(aprovado.get().getId());
+            return;
+        }
+
+        pedido.pagamentoAtivo().ifPresent(pagamentoService::cancelarNoGateway);
+        pedido.cancelar();
+        // TODO estoque: liberar os itens do pedido
+        if (pedido.getCupomDesconto() != null) {
+            cupomDescontoService.incrementarQuantidade(pedido.getCupomDesconto());
+        }
+        pedidoCancelado.fire(new PedidoCanceladoEvent(pedido.getId(), "Pedido cancelado pela loja."));
     }
 
     @Override
