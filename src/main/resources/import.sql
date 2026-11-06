@@ -79,14 +79,33 @@ insert into Panela (modelo, preco, peso, capacidadelitros, descricao, isinducao,
   ('PressurePro', 49990, 2.4, 5.0, 'Panela de pressão com tampa de segurança.', false, 1, 1, 2, 2, 5, 8, 2, 2, 2, CURRENT_DATE, 0),
   ('CookPlus', 32990, 2.0, 4.2, 'Panela multiuso com acabamento inox.', true, 2, 2, 3, 3, 6, 9, 3, 3, 3, CURRENT_DATE, 0);
 
+-- Regiões
+insert into Regiao (nome, data_cadastro, version) values ('Norte', CURRENT_DATE, 0);
+insert into Regiao (nome, data_cadastro, version) values ('Nordeste', CURRENT_DATE, 0);
+insert into Regiao (nome, data_cadastro, version) values ('Centro-Oeste', CURRENT_DATE, 0);
+insert into Regiao (nome, data_cadastro, version) values ('Sudeste', CURRENT_DATE, 0);
+insert into Regiao (nome, data_cadastro, version) values ('Sul', CURRENT_DATE, 0);
+
+-- Estados
+insert into Estado (nome, sigla, id_regiao, data_cadastro, version) values ('São Paulo', 'SP', 4, CURRENT_DATE, 0);
+insert into Estado (nome, sigla, id_regiao, data_cadastro, version) values ('Rio de Janeiro', 'RJ', 4, CURRENT_DATE, 0);
+insert into Estado (nome, sigla, id_regiao, data_cadastro, version) values ('Minas Gerais', 'MG', 4, CURRENT_DATE, 0);
+insert into Estado (nome, sigla, id_regiao, data_cadastro, version) values ('Tocantins', 'TO', 1, CURRENT_DATE, 0);
+
+-- Cidades
+insert into Cidade (nome, id_estado, data_cadastro, version) values ('São Paulo', 1, CURRENT_DATE, 0);
+insert into Cidade (nome, id_estado, data_cadastro, version) values ('Rio de Janeiro', 2, CURRENT_DATE, 0);
+insert into Cidade (nome, id_estado, data_cadastro, version) values ('Belo Horizonte', 3, CURRENT_DATE, 0);
+insert into Cidade (nome, id_estado, data_cadastro, version) values ('Palmas', 4, CURRENT_DATE, 0);
+
 -- Endereços
-insert into Endereco (rua, numero, cidade, estado, cep, data_cadastro, version) values ('Rua das Flores', '123', 'São Paulo', 'SP', '01234-567', CURRENT_DATE, 0);
-insert into Endereco (rua, numero, cidade, estado, cep, data_cadastro, version) values ('Avenida Paulista', '1000', 'São Paulo', 'SP', '01311-100', CURRENT_DATE, 0);
-insert into Endereco (rua, numero, cidade, estado, cep, data_cadastro, version) values ('Rua Oscar Freire', '500', 'São Paulo', 'SP', '01426-100', CURRENT_DATE, 0);
-insert into Endereco (rua, numero, cidade, estado, cep, data_cadastro, version) values ('Avenida Rio Branco', '156', 'Rio de Janeiro', 'RJ', '20040-020', CURRENT_DATE, 0);
-insert into Endereco (rua, numero, cidade, estado, cep, data_cadastro, version) values ('Rua Gonçalves Dias', '45', 'Rio de Janeiro', 'RJ', '20040-030', CURRENT_DATE, 0);
-insert into Endereco (rua, numero, cidade, estado, cep, data_cadastro, version) values ('Avenida Getúlio Vargas', '1200', 'Belo Horizonte', 'MG', '30130-100', CURRENT_DATE, 0);
-insert into Endereco (rua, numero, cidade, estado, cep, data_cadastro, version) values ('Rua Espírito Santo', '789', 'Belo Horizonte', 'MG', '30140-071', CURRENT_DATE, 0);
+insert into Endereco (logradouro, numero, complemento, bairro, cep, id_cidade, data_cadastro, version) values ('Rua das Flores', '123', 'Apto 101', 'Centro', '01234-567', 1, CURRENT_DATE, 0);
+insert into Endereco (logradouro, numero, complemento, bairro, cep, id_cidade, data_cadastro, version) values ('Avenida Paulista', '1000', null, 'Bela Vista', '01311-100', 1, CURRENT_DATE, 0);
+insert into Endereco (logradouro, numero, complemento, bairro, cep, id_cidade, data_cadastro, version) values ('Rua Oscar Freire', '500', null, 'Cerqueira César', '01426-100', 1, CURRENT_DATE, 0);
+insert into Endereco (logradouro, numero, complemento, bairro, cep, id_cidade, data_cadastro, version) values ('Avenida Rio Branco', '156', null, 'Centro', '20040-020', 2, CURRENT_DATE, 0);
+insert into Endereco (logradouro, numero, complemento, bairro, cep, id_cidade, data_cadastro, version) values ('Rua Gonçalves Dias', '45', 'Sala 2', 'Centro', '20040-030', 2, CURRENT_DATE, 0);
+insert into Endereco (logradouro, numero, complemento, bairro, cep, id_cidade, data_cadastro, version) values ('Avenida Getúlio Vargas', '1200', null, 'Savassi', '30130-100', 3, CURRENT_DATE, 0);
+insert into Endereco (logradouro, numero, complemento, bairro, cep, id_cidade, data_cadastro, version) values ('Rua Espírito Santo', '789', null, 'Centro', '30140-071', 3, CURRENT_DATE, 0);
 
 -- Usuários
 insert into Usuario (login, senha_hash, perfil, data_cadastro, version) values ('Leandro', '$argon2id$v=19$m=65536,t=3,p=4$upAxp+68yN5Q+2Ttn6PiUg$mtcho1Pl1uRVdr/IizjBPzPs9mH9kp12r4QDj4ZklRI', 'ADMIN', CURRENT_DATE, 0);

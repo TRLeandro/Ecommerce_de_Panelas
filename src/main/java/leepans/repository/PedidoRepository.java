@@ -20,7 +20,7 @@ public class PedidoRepository implements PanacheRepository<Pedido> {
     }
 
     public PanacheQuery<Pedido> findByEnderecoCidade(String cidade) {
-        return find("SELECT p FROM Pedido p WHERE UPPER(p.endereco.cidade) LIKE UPPER(?1)", "%" + cidade + "%");
+        return find("SELECT p FROM Pedido p WHERE UPPER(p.endereco.cidade.nome) LIKE UPPER(?1)", "%" + cidade + "%");
     }
 
     public PanacheQuery<Pedido> findComprasUsuario(String usuarioLogin) {

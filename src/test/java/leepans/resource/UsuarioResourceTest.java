@@ -63,7 +63,7 @@ class UsuarioResourceTest {
                           "sobrenome":"Completo",
                           "login":"completo@test.com",
                           "senha":"SenhaForte123",
-                          "endereco":{"rua":"Rua A","numero":"10","cidade":"Palmas","estado":"TO","cep":"77000-000"}
+                          "endereco":{"logradouro":"Rua A","numero":"10","bairro":"Centro","cep":"77000-000","idCidade":1}
                         }
                         """)
                 .when()
@@ -101,7 +101,7 @@ class UsuarioResourceTest {
 
         given()
                 .contentType(ContentType.JSON)
-                .body("{\"rua\":\"Rua B\",\"numero\":\"20\",\"cidade\":\"Palmas\",\"estado\":\"TO\",\"cep\":\"77000-001\"}")
+                .body("{\"logradouro\":\"Rua B\",\"numero\":\"20\",\"bairro\":\"Centro\",\"cep\":\"77000-001\",\"idCidade\":1}")
                 .when()
                 .patch(BASE + "/editar/enderecos")
                 .then()
