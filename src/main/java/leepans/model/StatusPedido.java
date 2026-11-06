@@ -1,9 +1,12 @@
 package leepans.model;
 
 public enum StatusPedido {
-    ENTREGUE(1L, "Entregue"),
-    PENDENTE(2L, "Pendente"),
-    CANCELADO(3L, "Cancelado");
+    AGUARDANDO_PAGAMENTO(1L, "Aguardando pagamento"),
+    PAGO(2L, "Pago"),
+    EM_SEPARACAO(3L, "Em separação"),
+    ENVIADO(4L, "Enviado"),
+    ENTREGUE(5L, "Entregue"),
+    CANCELADO(6L, "Cancelado");
 
     private final Long id;
     private final String nome;

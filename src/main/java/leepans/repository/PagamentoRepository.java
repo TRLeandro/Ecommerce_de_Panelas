@@ -14,7 +14,7 @@ public class PagamentoRepository implements PanacheRepository<Pagamento> {
     }
 
     public PanacheQuery<Pagamento> findByStatusPagamento(StatusPagamento statusPagamento) {
-        return find("statusPagamento", statusPagamento);
+        return find("status", statusPagamento);
     }
 
     public PanacheQuery<Pagamento> findByUsuario(String login) {

@@ -8,23 +8,19 @@ import java.util.List;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import leepans.exception.BusinessRuleViolationException;
 import leepans.exception.ResourceNotFoundException;
 import leepans.exception.ValidationException;
-import leepans.model.Boleto;
-import leepans.model.CartaoCredito;
-import leepans.model.CartaoDebito;
+import leepans.model.Cidade;
 import leepans.model.CupomDesconto;
 import leepans.model.Endereco;
+import leepans.model.EnderecoEntrega;
 import leepans.model.ItemPedido;
-import leepans.model.Pagamento;
 import leepans.model.Pedido;
-import leepans.model.Pix;
-import leepans.model.StatusPagamento;
 import leepans.model.StatusPedido;
-import leepans.model.TipoPagamento;
 import leepans.model.Usuario;
+import leepans.repository.CidadeRepository;
 import leepans.repository.CupomDescontoRepository;
-import leepans.repository.EnderecoRepository;
 import leepans.repository.ItemPedidoRepository;
 import leepans.repository.PedidoRepository;
 import leepans.service.auth.EmailService;
@@ -45,25 +41,10 @@ public class PedidoService implements PedidoServiceInter {
     UsuarioService usuarioService;
 
     @Inject
-    EnderecoService enderecoService;
-
-    @Inject
-    EnderecoRepository enderecoRepository;
-
-    @Inject
-    PanelaService panelaService;
-
-    @Inject
-    PagamentoService pagamentoService;
-
-    @Inject
-    CupomDescontoService cupomDescontoService;
+    CidadeRepository cidadeRepository;
 
     @Inject
     EmailService emailService;
-
-    @Inject
-    PedidoService self;
 
     @Override
     public List<Pedido> findAll() {
@@ -116,81 +97,43 @@ public class PedidoService implements PedidoServiceInter {
 
     @Override
     @Transactional
-    public Pedido create(Pedido pedido, String login, Endereco endereco, TipoPagamento tipoPagamento,
-            String codigoCupom) {
-        // Validar itens do pedido
-        try {
-            validarItens(pedido.getItens());
+    public Pedido create(Pedido pedido, String login, Endereco endereco, String codigoCupom) {
+        validarItens(pedido.getItens());
 
-            // O preço vem sempre do catálogo, nunca do cliente
-            pedido.getItens().forEach(item -> item.setValorUnitario(item.getPanela().getPreco()));
+        // O preço vem sempre do catálogo, nunca do cliente
+        pedido.getItens().forEach(item -> item.setValorUnitario(item.getPanela().getPreco()));
+        BigDecimal valorItens = calcularValorItens(pedido.getItens());
 
-            pedido.setCupomDesconto(buscarCupomComTrava(codigoCupom));
+        pedido.setCupomDesconto(buscarCupomComTrava(codigoCupom));
+        BigDecimal valorDesconto = validarEAplicarCupomDesconto(pedido.getCupomDesconto(), valorItens);
 
-            // Calcular valor bruto
-            BigDecimal valorBruto = calcularValorBruto(pedido.getItens());
-
-            // Validar e aplicar cupom desconto
-            BigDecimal valorDesconto = validarEAplicarCupomDesconto(pedido.getCupomDesconto(), valorBruto);
-
-            // Buscar o usuário
-            Usuario usuario = usuarioService.findByLogin(login);
-            if (usuario == null) {
-                throw new ResourceNotFoundException("Usuário", login);
-            }
-
-            // Validar e processar endereço
-            Endereco enderecoFinal = validarEProcessarEndereco(endereco, usuario);
-
-            // Criar e configurar pagamento
-            Pagamento pagamento = criarPagamento(pedido, tipoPagamento);
-            pagamento.setValor(valorBruto.subtract(valorDesconto));
-
-            // Configurar pedido
-            pedido.setUsuario(usuario);
-            pedido.setEndereco(enderecoFinal);
-            pedido.setValorBruto(valorBruto);
-            pedido.setValorDesconto(valorDesconto);
-            pedido.setPagamento(pagamento);
-            pedido.setStatus(StatusPedido.PENDENTE);
-
-            // Persistir pedido e pagamento
-            repository.persist(pedido);
-            pagamentoService.create(pagamento);
-
-            // Enviar email de confirmação para o cliente
-            emailService.sendOrderConfirmedEmail(pedido.getUsuario().getNome(), pedido.getId().toString());
-
-            return pedido;
-        } catch (Exception e) {
-            self.cancelarPedido(pedido, e);
-            throw e;
+        Usuario usuario = usuarioService.findByLogin(login);
+        if (usuario == null) {
+            throw new ResourceNotFoundException("Usuário", login);
         }
-    }
 
-    @Transactional(Transactional.TxType.REQUIRES_NEW)
-    void cancelarPedido(Pedido pedido, Exception e) {
-        if (pedido.getId() != null) {
-            pedido.setStatus(StatusPedido.CANCELADO);
-            repository.getEntityManager().merge(pedido);
-        }
-        String nome = pedido.getUsuario() != null ? pedido.getUsuario().getNome() : "Cliente";
-        String idPedido = pedido.getId() != null ? pedido.getId().toString() : "N/A";
-        emailService.sendOrderDeclinedEmail(nome, idPedido, e.getMessage());
-    }
+        pedido.setUsuario(usuario);
+        pedido.setEnderecoEntrega(copiarEnderecoEntrega(endereco, usuario));
+        pedido.setValorItens(valorItens);
+        pedido.setValorDesconto(valorDesconto);
 
-    @Override
-    @Transactional
-    public void setStatus(Long id, StatusPedido status) {
-        Pedido pedido = findById(id);
-        pedido.setStatus(status);
+        // TODO estoque: reservar os itens do pedido
         repository.persist(pedido);
+
+        emailService.sendOrderConfirmedEmail(pedido.getUsuario().getNome(), pedido.getId().toString());
+
+        return pedido;
     }
 
     @Override
     @Transactional
     public void delete(Long id) {
         Pedido pedido = findById(id);
+
+        if (!pedido.getPagamentos().isEmpty()) {
+            throw new BusinessRuleViolationException(
+                    "Pedido com pagamentos não pode ser removido: pagamentos nunca são apagados.", "pagamentos");
+        }
 
         // Deletar itens do pedido
         if (pedido.getItens() != null) {
@@ -202,30 +145,13 @@ public class PedidoService implements PedidoServiceInter {
         repository.deleteById(id);
     }
 
-    private Pagamento criarPagamento(Pedido pedido, TipoPagamento tipoPagamento) {
-        Pagamento pagamento = null;
-        if (tipoPagamento == TipoPagamento.CARTAO_CREDITO)
-            pagamento = new CartaoCredito();
-        else if (tipoPagamento == TipoPagamento.CARTAO_DEBITO)
-            pagamento = new CartaoDebito();
-        else if (tipoPagamento == TipoPagamento.BOLETO)
-            pagamento = new Boleto();
-        else
-            pagamento = new Pix();
-        pagamento.setPedido(pedido);
-        pagamento.setTipoPagamento(tipoPagamento);
-        pagamento.setStatusPagamento(StatusPagamento.PENDENTE);
-        pagamento.setDataProcessado(LocalDateTime.now());
-        return pagamento;
-    }
-
-    private BigDecimal calcularValorBruto(List<ItemPedido> itens) {
-        BigDecimal valorBruto = BigDecimal.ZERO;
+    private BigDecimal calcularValorItens(List<ItemPedido> itens) {
+        BigDecimal valorItens = BigDecimal.ZERO;
         for (ItemPedido item : itens) {
             BigDecimal quantidade = BigDecimal.valueOf(item.getQuantidade());
-            valorBruto = valorBruto.add(item.getValorUnitario().multiply(quantidade));
+            valorItens = valorItens.add(item.getValorUnitario().multiply(quantidade));
         }
-        return valorBruto;
+        return valorItens;
     }
 
     /**
@@ -262,8 +188,7 @@ public class PedidoService implements PedidoServiceInter {
     /**
      * Valida e aplica o cupom desconto ao pedido
      */
-    @Transactional
-    public BigDecimal validarEAplicarCupomDesconto(CupomDesconto cupomDesconto, BigDecimal valorBruto) {
+    private BigDecimal validarEAplicarCupomDesconto(CupomDesconto cupomDesconto, BigDecimal valorItens) {
         if (cupomDesconto == null) {
             return BigDecimal.ZERO;
         }
@@ -281,7 +206,7 @@ public class PedidoService implements PedidoServiceInter {
         }
 
         if (cupomDesconto.getValorMinimoCompra() != null
-                && cupomDesconto.getValorMinimoCompra().compareTo(valorBruto) > 0) {
+                && cupomDesconto.getValorMinimoCompra().compareTo(valorItens) > 0) {
             throw new ValidationException(
                     "O valor mínimo de compra para este cupom é R$ " + cupomDesconto.getValorMinimoCompra(),
                     "cupomDesconto");
@@ -295,32 +220,30 @@ public class PedidoService implements PedidoServiceInter {
         } else if (cupomDesconto.getPercentualDesconto() != null
                 && cupomDesconto.getPercentualDesconto().compareTo(new BigDecimal(0)) > 0) {
             BigDecimal percentual = cupomDesconto.getPercentualDesconto();
-            desconto = valorBruto.multiply(percentual).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+            desconto = valorItens.multiply(percentual).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
         }
 
         if (desconto.compareTo(BigDecimal.ZERO) > 0) {
-            // cupomDescontoService.decrementarQuantidade(cupomDesconto);
-            if (cupomDesconto.getQuantidadeDisponivel() > 0) {
+            if (cupomDesconto.getQuantidadeDisponivel() != null) {
                 cupomDesconto.setQuantidadeDisponivel(cupomDesconto.getQuantidadeDisponivel() - 1);
             }
-            return desconto;
+            return desconto.min(valorItens);
         }
 
         return BigDecimal.ZERO;
     }
 
     /**
-     * Valida e processa o endereço do pedido
+     * Copia para o pedido o endereço informado ou, na falta dele, o do usuário.
      */
-    private Endereco validarEProcessarEndereco(Endereco endereco, Usuario usuario) {
-        // Se não foi fornecido endereço, usar o endereço do usuário
+    private EnderecoEntrega copiarEnderecoEntrega(Endereco endereco, Usuario usuario) {
         if (endereco == null) {
             if (usuario.getEndereco() == null) {
                 throw new ValidationException(
                         "Endereço não fornecido e usuário não possui endereço registrado.",
                         "endereco");
             }
-            return usuario.getEndereco();
+            return EnderecoEntrega.copiaDe(usuario.getEndereco(), usuario.getEndereco().getCidade());
         }
 
         // Validar campos obrigatórios do endereço
@@ -340,22 +263,10 @@ public class PedidoService implements PedidoServiceInter {
             throw new ValidationException("A cidade do endereço é obrigatória.", "endereco.cidade");
         }
 
-        // Verificar se o endereço já existe no banco de dados
-        Endereco enderecoExistente = enderecoRepository.findByAllFields(
-                endereco.getLogradouro(),
-                endereco.getNumero(),
-                endereco.getComplemento(),
-                endereco.getBairro(),
-                endereco.getCep(),
-                endereco.getCidade().getId());
-
-        if (enderecoExistente != null) {
-            // Se o endereço já existe, usar o existente
-            return enderecoExistente;
+        Cidade cidade = cidadeRepository.findById(endereco.getCidade().getId());
+        if (cidade == null) {
+            throw new ResourceNotFoundException("Cidade", endereco.getCidade().getId());
         }
-
-        // Se não existe, criar um novo endereço
-        enderecoService.create(endereco);
-        return endereco;
+        return EnderecoEntrega.copiaDe(endereco, cidade);
     }
 }

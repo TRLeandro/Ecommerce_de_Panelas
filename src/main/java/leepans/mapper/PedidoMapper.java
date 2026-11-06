@@ -4,11 +4,12 @@ import java.util.List;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import leepans.dto.pedido.EnderecoEntregaResponseDTO;
 import leepans.dto.pedido.PedidoRequestDTO;
 import leepans.dto.pedido.PedidoResponseDTO;
+import leepans.model.EnderecoEntrega;
 import leepans.model.ItemPedido;
 import leepans.model.Pedido;
-import leepans.model.StatusPedido;
 
 @ApplicationScoped
 public class PedidoMapper {
@@ -36,7 +37,6 @@ public class PedidoMapper {
         }
 
         pedido.setItens(itens);
-        pedido.setStatus(StatusPedido.PENDENTE);
 
         return pedido;
     }
@@ -47,17 +47,35 @@ public class PedidoMapper {
         return new PedidoResponseDTO(
                 pedido.getId(),
                 pedido.getUsuario() != null ? usuarioMapper.toResponseDTO(pedido.getUsuario()) : null,
-                pedido.getEndereco() != null ? EnderecoMapper.toResponse(pedido.getEndereco()) : null,
+                toResponse(pedido.getEnderecoEntrega()),
                 pedido.getStatus(),
-                pedido.getValorBruto(),
+                pedido.getValorItens(),
                 pedido.getValorDesconto(),
+                pedido.getValorFrete(),
+                pedido.valorTotal(),
                 CupomDescontoMapper.toResponse(pedido.getCupomDesconto()),
-                pagamentoMapper.toResponse(pedido.getPagamento()),
+                pedido.getPagamentos().stream()
+                        .map(pagamentoMapper::toResponse)
+                        .toList(),
                 pedido.getItens() != null ? pedido.getItens().stream()
                         .map(itemPedidoMapper::toResponse)
                         .toList() : null,
                 pedido.getDataCadastro(),
                 pedido.getVersion()
+        );
+    }
+
+    private EnderecoEntregaResponseDTO toResponse(EnderecoEntrega endereco) {
+        if (endereco == null) return null;
+
+        return new EnderecoEntregaResponseDTO(
+                endereco.getLogradouro(),
+                endereco.getNumero(),
+                endereco.getComplemento(),
+                endereco.getBairro(),
+                endereco.getCidade(),
+                endereco.getEstado(),
+                endereco.getCep()
         );
     }
 }

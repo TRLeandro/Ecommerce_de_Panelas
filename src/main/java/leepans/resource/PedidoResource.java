@@ -11,7 +11,6 @@ import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
-import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -135,19 +134,10 @@ public class PedidoResource {
     public Response create(@Valid PedidoRequestDTO dto) {
         String login = jwt.getClaim("upn");
         Endereco endereco = EnderecoMapper.toEntity(dto.endereco());
-        Pedido pedido = service.create(pedidoMapper.toEntity(dto), login, endereco, dto.pagamento(),
-                dto.codigoCupomDesconto());
+        Pedido pedido = service.create(pedidoMapper.toEntity(dto), login, endereco, dto.codigoCupomDesconto());
         return Response.status(201)
                 .entity(pedidoMapper.toResponse(pedido))
                 .build();
-    }
-
-    @PATCH
-    @Path("/admin/{id}/status/{status}")
-    @RolesAllowed({ "ADMIN", "FUNCIONARIO" })
-    public Response setStatus(@PathParam("id") Long id, @PathParam("status") StatusPedido status) {
-        service.setStatus(id, status);
-        return Response.noContent().build();
     }
 
     @DELETE

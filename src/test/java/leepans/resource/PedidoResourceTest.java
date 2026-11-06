@@ -19,7 +19,7 @@ import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
-import leepans.model.Endereco;
+import leepans.model.EnderecoEntrega;
 import leepans.model.Pedido;
 import leepans.model.StatusPedido;
 import leepans.model.Usuario;
@@ -74,9 +74,9 @@ class PedidoResourceTest {
     @Test
     @TestJwt
     void listarComprasPorStatus_deveRetornar200() {
-        when(service.findCompras(eq(TestJwt.LOGIN), eq(StatusPedido.PENDENTE))).thenReturn(List.of(pedido(1L)));
+        when(service.findCompras(eq(TestJwt.LOGIN), eq(StatusPedido.AGUARDANDO_PAGAMENTO))).thenReturn(List.of(pedido(1L)));
 
-        given().accept(ContentType.JSON).when().get(BASE + "/compras/me/status/PENDENTE").then()
+        given().accept(ContentType.JSON).when().get(BASE + "/compras/me/status/AGUARDANDO_PAGAMENTO").then()
                 .statusCode(200)
                 .body("size()", is(1));
     }
@@ -94,9 +94,9 @@ class PedidoResourceTest {
     @Test
     @TestSecurity(user = "func", roles = "FUNCIONARIO")
     void buscarPorStatus_deveRetornar200() {
-        when(service.findByStatus(StatusPedido.PENDENTE)).thenReturn(List.of(pedido(1L)));
+        when(service.findByStatus(StatusPedido.AGUARDANDO_PAGAMENTO)).thenReturn(List.of(pedido(1L)));
 
-        given().accept(ContentType.JSON).when().get(ADMIN + "/status/PENDENTE").then()
+        given().accept(ContentType.JSON).when().get(ADMIN + "/status/AGUARDANDO_PAGAMENTO").then()
                 .statusCode(200)
                 .body("size()", is(1));
     }
@@ -125,7 +125,7 @@ class PedidoResourceTest {
     @Test
     @TestJwt
     void criar_deveRetornar201() {
-        when(service.create(any(), eq(TestJwt.LOGIN), any(), any(), any())).thenReturn(pedido(5L));
+        when(service.create(any(), eq(TestJwt.LOGIN), any(), any())).thenReturn(pedido(5L));
 
         given()
                 .contentType(ContentType.JSON)
@@ -135,14 +135,6 @@ class PedidoResourceTest {
                 .then()
                 .statusCode(201)
                 .body("id", equalTo(5));
-    }
-
-    @Test
-    @TestSecurity(user = "func", roles = "FUNCIONARIO")
-    void atualizarStatus_deveRetornar204() {
-        doNothing().when(service).setStatus(1L, StatusPedido.ENTREGUE);
-
-        given().when().patch(ADMIN + "/1/status/ENTREGUE").then().statusCode(204);
     }
 
     @Test
@@ -162,8 +154,7 @@ class PedidoResourceTest {
         return """
                 {
                   "itens":[{"idPanela":1,"quantidade":1}],
-                  "endereco":{"logradouro":"Rua A","numero":"10","bairro":"Centro","cep":"77000-000","idCidade":1},
-                  "pagamento":"PIX"
+                  "endereco":{"logradouro":"Rua A","numero":"10","bairro":"Centro","cep":"77000-000","idCidade":1}
                 }
                 """;
     }
@@ -171,8 +162,7 @@ class PedidoResourceTest {
     private static Pedido pedido(Long id) {
         Pedido p = new Pedido();
         p.setId(id);
-        p.setStatus(StatusPedido.PENDENTE);
-        p.setValorBruto(new BigDecimal(100));
+        p.setValorItens(new BigDecimal(100));
         p.setValorDesconto(BigDecimal.ZERO);
 
         Usuario u = new Usuario();
@@ -180,13 +170,7 @@ class PedidoResourceTest {
         u.setLogin(TestJwt.LOGIN);
         p.setUsuario(u);
 
-        Endereco e = new Endereco();
-        e.setId(1L);
-        leepans.model.Cidade c = new leepans.model.Cidade();
-        c.setId(1L);
-        c.setNome("Palmas");
-        e.setCidade(c);
-        p.setEndereco(e);
+        p.setEnderecoEntrega(new EnderecoEntrega("Rua A", "10", null, "Centro", "Palmas", "TO", "77000-000"));
 
         return p;
     }

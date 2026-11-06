@@ -120,10 +120,10 @@ insert into ItemPedido (panela_id, quantidade, valor_unitario, data_cadastro, ve
 insert into ItemPedido (panela_id, quantidade, valor_unitario, data_cadastro, version) values (2, 2, 49990.0, CURRENT_DATE, 0);
 insert into ItemPedido (panela_id, quantidade, valor_unitario, data_cadastro, version) values (3, 1, 32990.0, CURRENT_DATE, 0);
 
--- Pedidos
-insert into Pedido (usuario_id, endereco_id, codigo_status_pedido, valor_Bruto, data_cadastro, version) values (1, 1, 2, 99970.0, CURRENT_DATE, 0);
-insert into Pedido (usuario_id, endereco_id, codigo_status_pedido, valor_Bruto, data_cadastro, version) values (2, 4, 1, 82980.0, CURRENT_DATE, 0);
-insert into Pedido (usuario_id, endereco_id, codigo_status_pedido, valor_Bruto, data_cadastro, version) values (3, 6, 2, 157950.0, CURRENT_DATE, 0);
+-- Pedidos (status: 1 = AGUARDANDO_PAGAMENTO, 5 = ENTREGUE)
+insert into Pedido (usuario_id, entrega_logradouro, entrega_numero, entrega_complemento, entrega_bairro, entrega_cidade, entrega_estado, entrega_cep, codigo_status_pedido, valor_itens, valor_desconto, valor_frete, data_cadastro, version) values (1, 'Rua das Flores', '123', 'Apto 101', 'Centro', 'São Paulo', 'SP', '01234-567', 1, 99970.00, 0.00, 0.00, CURRENT_DATE, 0);
+insert into Pedido (usuario_id, entrega_logradouro, entrega_numero, entrega_complemento, entrega_bairro, entrega_cidade, entrega_estado, entrega_cep, codigo_status_pedido, valor_itens, valor_desconto, valor_frete, data_cadastro, version) values (2, 'Avenida Rio Branco', '156', null, 'Centro', 'Rio de Janeiro', 'RJ', '20040-020', 5, 32990.00, 0.00, 0.00, CURRENT_DATE, 0);
+insert into Pedido (usuario_id, entrega_logradouro, entrega_numero, entrega_complemento, entrega_bairro, entrega_cidade, entrega_estado, entrega_cep, codigo_status_pedido, valor_itens, valor_desconto, valor_frete, data_cadastro, version) values (3, 'Avenida Getúlio Vargas', '1200', null, 'Savassi', 'Belo Horizonte', 'MG', '30130-100', 1, 207940.00, 0.00, 0.00, CURRENT_DATE, 0);
 
 -- Associação Pedido <-> ItemPedido
 insert into pedido_itempedido (Pedido_id, itens_id) values (1, 1);
@@ -132,3 +132,7 @@ insert into pedido_itempedido (Pedido_id, itens_id) values (2, 3);
 insert into pedido_itempedido (Pedido_id, itens_id) values (3, 4);
 insert into pedido_itempedido (Pedido_id, itens_id) values (3, 5);
 insert into pedido_itempedido (Pedido_id, itens_id) values (3, 6);
+
+-- Pagamentos (metodo: 4 = PIX, 1 = CARTAO_CREDITO; status: 2 = AGUARDANDO_PAGAMENTO, 4 = PAGO)
+insert into Pagamento (pedido_id, codigo_metodo_pagamento, codigo_status_pagamento, valor, gateway, gateway_payment_id, idempotency_key, expira_em, pix_txid, pix_qr_code_copia_e_cola, data_cadastro, version) values (1, 4, 2, 99970.00, 'fake', 'fake_seed_pix_1', 'seed-pedido-1', CURRENT_TIMESTAMP + INTERVAL '1' DAY, 'seed-txid-1', '00020126...FAKEseed-txid-1', CURRENT_DATE, 0);
+insert into Pagamento (pedido_id, codigo_metodo_pagamento, codigo_status_pagamento, valor, gateway, gateway_payment_id, idempotency_key, pago_em, cartao_bandeira, cartao_ultimos4_digitos, cartao_parcelas, cartao_codigo_autorizacao, data_cadastro, version) values (2, 1, 4, 32990.00, 'fake', 'fake_seed_cartao_2', 'seed-pedido-2', CURRENT_DATE, 'VISA', '4242', 1, 'SEED01', CURRENT_DATE, 0);
