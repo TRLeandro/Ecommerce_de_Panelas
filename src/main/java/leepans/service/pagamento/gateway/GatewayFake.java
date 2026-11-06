@@ -6,7 +6,6 @@ import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Map;
@@ -121,7 +120,7 @@ public class GatewayFake implements GatewayPagamento {
         DadosBoleto boleto = new DadosBoleto(digitosAleatorios(TAMANHO_LINHA_DIGITAVEL),
                 digitosAleatorios(TAMANHO_CODIGO_BARRAS), "https://gateway.fake/boletos/" + id + ".pdf", vencimento);
         return new ResultadoCobranca(id, StatusGateway.AGUARDANDO_PAGAMENTO, "pending", "Aguardando pagamento do boleto.",
-                null, null, boleto, vencimento.atTime(LocalTime.MAX),
+                null, null, boleto, vencimento.atTime(23, 59, 59),
                 payload(id, StatusGateway.AGUARDANDO_PAGAMENTO, solicitacao.valor()));
     }
 

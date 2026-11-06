@@ -1,6 +1,7 @@
 package leepans.resource;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
@@ -21,6 +22,8 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
+import io.quarkus.test.security.jwt.Claim;
+import io.quarkus.test.security.jwt.JwtSecurity;
 import io.restassured.http.ContentType;
 import jakarta.inject.Inject;
 import leepans.model.Cidade;
@@ -175,6 +178,35 @@ class PagamentoFluxoTest {
                 .post("/pedidos/" + pedidoId + "/pagamentos")
                 .then()
                 .statusCode(503);
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = { "ADMIN", "CLIENTE" })
+    @JwtSecurity(claims = @Claim(key = "upn", value = TestJwt.LOGIN))
+    void simularPagamento_devolveOStatusAtualizado() {
+        int pedidoId = criarPedido();
+        int pagamentoId = given()
+                .contentType(ContentType.JSON)
+                .header("Idempotency-Key", UUID.randomUUID().toString())
+                .body("{\"metodo\":\"BOLETO\"}")
+                .when()
+                .post("/pedidos/" + pedidoId + "/pagamentos")
+                .then()
+                .statusCode(201)
+                .body("boleto.linhaDigitavel", notNullValue())
+                .extract().path("id");
+
+        given().when().post("/pagamentos/admin/" + pagamentoId + "/simular-pagamento").then()
+                .statusCode(200)
+                .body("status", equalTo("PAGO"));
+
+        given().when().post("/pagamentos/admin/" + pagamentoId + "/estorno").then()
+                .statusCode(200)
+                .body("status", equalTo("ESTORNADO"));
+
+        given().when().get("/pagamentos/admin/" + pagamentoId + "/transacoes").then()
+                .statusCode(200)
+                .body("tipo", contains("CRIACAO", "WEBHOOK", "ESTORNO"));
     }
 
     @Test

@@ -288,12 +288,19 @@ public class PagamentoService implements PagamentoServiceInter {
         if (!GatewayFake.NOME.equals(gateway.nome())) {
             throw new ResourceNotFoundException("A simulação só existe com o gateway fake.");
         }
+        // Em transação própria: fora dela a entidade ficaria na sessão da requisição e quem
+        // relesse o pagamento depois da simulação receberia o status antigo
+        String gatewayPaymentId = QuarkusTransaction.requiringNew().call(() -> buscarCobrancaEmAberto(pagamentoId));
+        processarEventoGateway(gatewayFake.simularPagamento(gatewayPaymentId), gateway.nome());
+    }
+
+    private String buscarCobrancaEmAberto(Long pagamentoId) {
         Pagamento pagamento = findById(pagamentoId);
         if (!pagamento.getStatus().isAtivo() || pagamento.getGatewayPaymentId() == null) {
             throw new BusinessRuleViolationException(
                     "Não há cobrança em aberto para simular no pagamento " + pagamentoId + ".", "status");
         }
-        processarEventoGateway(gatewayFake.simularPagamento(pagamento.getGatewayPaymentId()), gateway.nome());
+        return pagamento.getGatewayPaymentId();
     }
 
     @Override
