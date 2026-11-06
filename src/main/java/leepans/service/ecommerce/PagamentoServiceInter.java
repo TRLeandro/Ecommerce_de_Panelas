@@ -2,12 +2,11 @@ package leepans.service.ecommerce;
 
 import java.util.List;
 
-import leepans.dto.pagamento.BoletoRequestDTO;
-import leepans.dto.pagamento.CartaoRequestDTO;
-import leepans.dto.pagamento.PagamentoPatchDTO;
-import leepans.dto.pagamento.PixRequestDTO;
+import leepans.dto.pagamento.IniciarPagamentoDTO;
 import leepans.model.Pagamento;
 import leepans.model.StatusPagamento;
+import leepans.model.TransacaoGateway;
+import leepans.service.pagamento.gateway.EventoGateway;
 
 public interface PagamentoServiceInter {
 
@@ -15,21 +14,25 @@ public interface PagamentoServiceInter {
 
     Pagamento findById(Long id);
 
+    Pagamento findByIdDoUsuario(Long id, String login);
+
     List<Pagamento> findByStatusPagamento(StatusPagamento statusPagamento);
 
     List<Pagamento> findByUsuario(String login);
 
-    Pagamento create(Pagamento pagamento);
+    List<TransacaoGateway> findTransacoes(Long pagamentoId);
 
-    void processarPagamento(Pagamento pagamento);
+    boolean existeIdempotencyKey(String idempotencyKey);
 
-    void completeInfo(Long id, CartaoRequestDTO dto);
+    Pagamento iniciar(Long pedidoId, String login, IniciarPagamentoDTO dto, String idempotencyKey);
 
-    void completeInfo(Long id, BoletoRequestDTO dto);
+    void processarEventoGateway(EventoGateway evento, String gateway);
 
-    void completeInfo(Long id, PixRequestDTO dto);
+    void simularPagamento(Long pagamentoId);
 
-    void setStatus(Long id, PagamentoPatchDTO dto);
+    void estornar(Long pagamentoId);
 
-    void delete(Long id);
+    void cancelarNoGateway(Pagamento pagamento);
+
+    int expirarPagamentosVencidos();
 }

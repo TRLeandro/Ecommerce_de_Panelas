@@ -5,13 +5,14 @@ import java.util.List;
 import leepans.model.Endereco;
 import leepans.model.Pedido;
 import leepans.model.StatusPedido;
-import leepans.model.TipoPagamento;
 
 public interface PedidoServiceInter {
 
     List<Pedido> findAll();
 
     Pedido findById(Long id);
+
+    Pedido findByIdDoUsuario(Long id, String login);
 
     List<Pedido> findCompras(String usuarioLogin, StatusPedido status);
 
@@ -23,9 +24,15 @@ public interface PedidoServiceInter {
 
     List<Pedido> findByEnderecoCidade(String cidade);
 
-    Pedido create(Pedido pedido, String login, Endereco endereco, TipoPagamento tipoPagamento);
+    Pedido create(Pedido pedido, String login, Endereco endereco, String codigoCupom);
 
-    void setStatus(Long id, StatusPedido status);
+    void iniciarSeparacao(Long id);
+
+    void marcarComoEnviado(Long id);
+
+    void marcarComoEntregue(Long id);
+
+    void cancelar(Long id);
 
     void delete(Long id);
 }

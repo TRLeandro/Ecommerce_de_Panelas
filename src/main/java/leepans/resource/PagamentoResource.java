@@ -6,24 +6,17 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
-import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
-import jakarta.ws.rs.PATCH;
-import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import leepans.dto.pagamento.BoletoRequestDTO;
-import leepans.dto.pagamento.CartaoRequestDTO;
 import leepans.dto.pagamento.PagamentoEcommerceDTO;
-import leepans.dto.pagamento.PagamentoPatchDTO;
 import leepans.dto.pagamento.PagamentoResponseDTO;
-import leepans.dto.pagamento.PixRequestDTO;
-import leepans.exception.ValidationException;
+import leepans.dto.pagamento.TransacaoGatewayResponseDTO;
 import leepans.mapper.PagamentoMapper;
 import leepans.model.StatusPagamento;
 import leepans.service.ecommerce.PagamentoService;
@@ -42,36 +35,12 @@ public class PagamentoResource {
     @Inject
     JsonWebToken jwt;
 
-    @PUT
-    @Path("/admin/processar/{id}")
-    @RolesAllowed({ "ADMIN", "FUNCIONARIO" })
-    public Response processarPagamento(@PathParam("id") Long id) {
-        service.processarPagamento(service.findById(id));
-        return Response.noContent().build();
-    }
-    
-    @PUT
-    @Path("/cartao/{id}")
-    @RolesAllowed({ "ADMIN", "FUNCIONARIO", "CLIENTE" })
-    public Response completeInfoCartao(@PathParam("id") Long id, @Valid CartaoRequestDTO dto) {
-        service.completeInfo(id, dto);
-        return Response.noContent().build();
-    }
-
-    @PUT
-    @Path("/boleto/{id}")
-    @RolesAllowed({ "ADMIN", "FUNCIONARIO", "CLIENTE" })
-    public Response completeInfoBoleto(@PathParam("id") Long id, @Valid BoletoRequestDTO dto) {
-        service.completeInfo(id, dto);
-        return Response.noContent().build();
-    }
-
-    @PUT
-    @Path("/pix/{id}")
-    @RolesAllowed({ "ADMIN", "FUNCIONARIO", "CLIENTE" })
-    public Response completeInfoPix(@PathParam("id") Long id, @Valid PixRequestDTO dto) {
-        service.completeInfo(id, dto);
-        return Response.noContent().build();
+    @GET
+    @Path("/{id}")
+    @RolesAllowed({ "CLIENTE" })
+    public Response findMeuPagamento(@PathParam("id") Long id) {
+        String login = jwt.getClaim("upn");
+        return Response.ok(pagamentoMapper.toResponse(service.findByIdDoUsuario(id, login))).build();
     }
 
     @GET
@@ -105,36 +74,43 @@ public class PagamentoResource {
     }
 
     @GET
+    @Path("/admin/{id}/transacoes")
+    @RolesAllowed({ "ADMIN", "FUNCIONARIO" })
+    public Response findTransacoes(@PathParam("id") Long id) {
+        List<TransacaoGatewayResponseDTO> lista = service.findTransacoes(id)
+                .stream()
+                .map(pagamentoMapper::toResponse)
+                .toList();
+        return Response.ok(lista).build();
+    }
+
+    @POST
+    @Path("/admin/{id}/estorno")
+    @Consumes(MediaType.WILDCARD)
+    @RolesAllowed({ "ADMIN" })
+    public Response estornar(@PathParam("id") Long id) {
+        service.estornar(id);
+        return Response.ok(pagamentoMapper.toResponse(service.findById(id))).build();
+    }
+
+    @POST
+    @Path("/admin/{id}/simular-pagamento")
+    @Consumes(MediaType.WILDCARD)
+    @RolesAllowed({ "ADMIN", "FUNCIONARIO" })
+    public Response simularPagamento(@PathParam("id") Long id) {
+        service.simularPagamento(id);
+        return Response.ok(pagamentoMapper.toResponse(service.findById(id))).build();
+    }
+
+    @GET
     @Path("/ecommerce")
     @RolesAllowed({ "ADMIN", "FUNCIONARIO", "CLIENTE" })
-    public Response findPagamentosEcommerce(@PathParam("id") Long id) {
+    public Response findPagamentosEcommerce() {
         String login = jwt.getClaim("upn");
         List<PagamentoEcommerceDTO> lista = service.findByUsuario(login)
                 .stream()
                 .map(pagamentoMapper::toEcommerceDTO)
                 .toList();
         return Response.ok(lista).build();
-    }
-
-    @PATCH
-    @Path("/admin/{id}")
-    @RolesAllowed({ "ADMIN", "FUNCIONARIO" })
-    public Response setStatus(@PathParam("id") Long id, @Valid PagamentoPatchDTO dto) {
-        if (dto.version() == null) {
-            throw new ValidationException(
-                    "A versão do pagamento é obrigatória para atualização.",
-                    "version"
-            );
-        }
-        service.setStatus(id, dto);
-        return Response.noContent().build();
-    }
-
-    @DELETE
-    @Path("/admin/{id}")
-    @RolesAllowed({ "ADMIN" })
-    public Response delete(@PathParam("id") Long id) {
-        service.delete(id);
-        return Response.noContent().build();
     }
 }

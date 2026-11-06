@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import leepans.dto.cupomDesconto.CupomDescontoResponseDTO;
-import leepans.dto.endereco.EnderecoResponseDTO;
 import leepans.dto.pagamento.PagamentoResponseDTO;
 import leepans.dto.usuario.UsuarioResponseDTO;
 import leepans.model.StatusPedido;
@@ -13,12 +12,14 @@ import leepans.model.StatusPedido;
 public record PedidoResponseDTO(
         Long id,
         UsuarioResponseDTO usuario,
-        EnderecoResponseDTO endereco,
+        EnderecoEntregaResponseDTO enderecoEntrega,
         StatusPedido status,
-        BigDecimal valorBruto,
+        BigDecimal valorItens,
         BigDecimal valorDesconto,
+        BigDecimal valorFrete,
+        BigDecimal valorTotal,
         CupomDescontoResponseDTO cupomDesconto,
-        PagamentoResponseDTO pagamento,
+        List<PagamentoResponseDTO> pagamentos,
         List<ItemPedidoResponseDTO> itens,
         LocalDateTime dataCadastro,
         Integer version

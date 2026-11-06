@@ -3,14 +3,15 @@ package leepans.dto.pagamento;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import leepans.model.MetodoPagamento;
 import leepans.model.StatusPagamento;
-import leepans.model.TipoPagamento;
 
 public record PagamentoEcommerceDTO(
         Long id,
-        LocalDateTime dataProcessado,
+        Long pedidoId,
+        MetodoPagamento metodo,
+        StatusPagamento status,
         BigDecimal valor,
-        TipoPagamento tipoPagamento,
-        StatusPagamento statusPagamento
+        LocalDateTime pagoEm
 ) {
 }

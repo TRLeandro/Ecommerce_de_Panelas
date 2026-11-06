@@ -107,9 +107,27 @@ class ListaDesejo{
 }
 
 class Pedido{
-- valorBruto : BigDecimal
+- valorItens : BigDecimal
 - valorDesconto : BigDecimal
-- endereco : Endereco
+- valorFrete : BigDecimal
++ valorTotal() : BigDecimal
++ pagamentoAtivo() : Optional<Pagamento>
++ pagamentoAprovado() : Optional<Pagamento>
++ marcarComoPago()
++ iniciarSeparacao()
++ marcarComoEnviado()
++ marcarComoEntregue()
++ cancelar()
+}
+
+class EnderecoEntrega <<embeddable>> {
+- logradouro : String
+- numero : String
+- complemento : String
+- bairro : String
+- cidade : String
+- estado : String
+- cep : String
 }
 
 class ItemPedido{
@@ -118,9 +136,12 @@ class ItemPedido{
 }
 
 enum StatusPedido{
-+ CANCELADO
-+ PENDENTE
++ AGUARDANDO_PAGAMENTO
++ PAGO
++ EM_SEPARACAO
++ ENVIADO
 + ENTREGUE
++ CANCELADO
 }
 
 class CupomDesconto {
@@ -133,37 +154,61 @@ class CupomDesconto {
 - ativo : boolean
 }
 
-abstract Pagamento{
-- dataProcessado : LocalDateTime
+class Pagamento{
 - valor : BigDecimal
-- tipoPagamento : TipoPagamento
-- statusPagamento : StatusPagamento
-- tentativasProcessamento : Integer
+- gateway : String
+- gatewayPaymentId : String
+- idempotencyKey : String
+- motivoRecusa : String
+- expiraEm : LocalDateTime
+- pagoEm : LocalDateTime
+- canceladoEm : LocalDateTime
++ aguardarPagamento(expiraEm)
++ autorizar(codigoAutorizacao)
++ confirmar(quando)
++ recusar(motivo)
++ expirar()
++ cancelar()
++ estornar()
++ contestar()
 }
 
-class CartaoCredito{
-- numero : String
-- titular : String
-- validade : LocalDate
-- codigoSeguranca : String
+class DadosCartao <<embeddable>> {
+- bandeira : String
+- ultimos4Digitos : String
+- parcelas : Integer
+- codigoAutorizacao : String
 }
 
-class CartaoDebito{
-- numero : String
-- titular : String
-- validade : LocalDate
-- codigoSeguranca : String
+class DadosPix <<embeddable>> {
+- qrCodeCopiaECola : String
+- qrCodeBase64 : String
+- txid : String
 }
 
-class Pix{
-- chavePix : String
-}
-
-class Boleto{
+class DadosBoleto <<embeddable>> {
+- linhaDigitavel : String
 - codigoBarras : String
+- urlPdf : String
+- dataVencimento : LocalDate
 }
 
-enum TipoPagamento{
+class TransacaoGateway{
+- statusGateway : String
+- codigoRetorno : String
+- mensagem : String
+- payloadBruto : String
+}
+
+class EventoWebhook{
+- gateway : String
+- eventoId : String
+- recebidoEm : LocalDateTime
+- processado : boolean
+- payloadBruto : String
+}
+
+enum MetodoPagamento{
 + CARTAO_CREDITO
 + CARTAO_DEBITO
 + BOLETO
@@ -172,8 +217,35 @@ enum TipoPagamento{
 
 enum StatusPagamento{
 + PENDENTE
-+ APROVADO
++ AGUARDANDO_PAGAMENTO
++ AUTORIZADO
++ PAGO
 + RECUSADO
++ EXPIRADO
++ CANCELADO
++ ESTORNADO
++ CONTESTADO
+}
+
+enum TipoTransacao{
++ CRIACAO
++ CONSULTA
++ WEBHOOK
++ ESTORNO
++ CANCELAMENTO
+}
+
+interface GatewayPagamento{
++ nome() : String
++ criarCobranca(solicitacao) : ResultadoCobranca
++ consultar(gatewayPaymentId) : ResultadoCobranca
++ estornar(gatewayPaymentId, valor) : ResultadoEstorno
++ cancelar(gatewayPaymentId)
++ interpretarWebhook(corpo, headers) : EventoGateway
+}
+
+class GatewayFake{
++ simularPagamento(gatewayPaymentId) : EventoGateway
 }
 
 
@@ -207,15 +279,19 @@ ListaDesejo "*" --> "*" Panela
 Pedido "*" --> "1" Usuario
 Pedido "1" --> "*" ItemPedido
 Pedido "*" --> "1" StatusPedido
-Pedido "1" --> "1" Pagamento
+Pedido "1" --> "*" Pagamento
+Pedido "1" *--> "1" EnderecoEntrega
 Pedido "*" --> "0..1" CupomDesconto
-Pagamento "*" --> "1" TipoPagamento
-
+Pagamento "*" --> "1" MetodoPagamento
 Pagamento "*" --> "1" StatusPagamento
-Pagamento <|-- CartaoCredito
-Pagamento <|-- CartaoDebito
-Pagamento <|-- Pix
-Pagamento <|-- Boleto
+Pagamento "1" *--> "0..1" DadosCartao
+Pagamento "1" *--> "0..1" DadosPix
+Pagamento "1" *--> "0..1" DadosBoleto
+Pagamento "1" *--> "*" TransacaoGateway
+TransacaoGateway "*" --> "1" TipoTransacao
+
+GatewayPagamento <|.. GatewayFake
+Pagamento ..> GatewayPagamento : cobrado por
 
 Endereco "*" --> "1" Cidade
 Cidade "*" --> "1" Estado
