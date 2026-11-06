@@ -6,10 +6,12 @@ import leepans.dto.pagamento.CartaoResponseDTO;
 import leepans.dto.pagamento.PagamentoEcommerceDTO;
 import leepans.dto.pagamento.PagamentoResponseDTO;
 import leepans.dto.pagamento.PixResponseDTO;
+import leepans.dto.pagamento.TransacaoGatewayResponseDTO;
 import leepans.model.DadosBoleto;
 import leepans.model.DadosCartao;
 import leepans.model.DadosPix;
 import leepans.model.Pagamento;
+import leepans.model.TransacaoGateway;
 
 @ApplicationScoped
 public class PagamentoMapper {
@@ -48,6 +50,20 @@ public class PagamentoMapper {
                 pagamento.getStatus(),
                 pagamento.getValor(),
                 pagamento.getPagoEm());
+    }
+
+    public TransacaoGatewayResponseDTO toResponse(TransacaoGateway transacao) {
+        if (transacao == null)
+            return null;
+
+        return new TransacaoGatewayResponseDTO(
+                transacao.getId(),
+                transacao.getTipo(),
+                transacao.getStatusGateway(),
+                transacao.getCodigoRetorno(),
+                transacao.getMensagem(),
+                transacao.getPayloadBruto(),
+                transacao.getDataCadastro());
     }
 
     private CartaoResponseDTO toResponse(DadosCartao cartao) {
