@@ -16,6 +16,7 @@ public final class ProblemTypes {
     public static final String UNAUTHORIZED = "unauthorized";
     public static final String INTERNAL = "internal-server-error";
     public static final String BUSINESS_RULE = "business-rule-violation";
+    public static final String GATEWAY_UNAVAILABLE = "payment-gateway-unavailable";
 
     private ProblemTypes() {
     }
