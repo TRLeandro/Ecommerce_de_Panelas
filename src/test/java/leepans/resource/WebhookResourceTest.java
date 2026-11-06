@@ -1,6 +1,7 @@
 package leepans.resource;
 
 import static io.restassured.RestAssured.given;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -58,8 +59,8 @@ class WebhookResourceTest {
 
         ArgumentCaptor<EventoGateway> evento = ArgumentCaptor.forClass(EventoGateway.class);
         verify(service).processarEventoGateway(evento.capture(), eq("fake"));
-        org.junit.jupiter.api.Assertions.assertEquals("evt_1", evento.getValue().eventoId());
-        org.junit.jupiter.api.Assertions.assertEquals(StatusGateway.PAGO, evento.getValue().novoStatus());
+        assertEquals("evt_1", evento.getValue().eventoId());
+        assertEquals(StatusGateway.PAGO, evento.getValue().novoStatus());
     }
 
     @Test

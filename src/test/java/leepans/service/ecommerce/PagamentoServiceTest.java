@@ -2,7 +2,6 @@ package leepans.service.ecommerce;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -63,6 +62,7 @@ import leepans.repository.UsuarioRepository;
 import leepans.service.pagamento.gateway.EventoGateway;
 import leepans.service.pagamento.gateway.GatewayFake;
 import leepans.service.pagamento.gateway.GatewayIndisponivelException;
+import leepans.service.pagamento.gateway.ResultadoCobranca;
 import leepans.service.pagamento.gateway.ResultadoEstorno;
 import leepans.service.pagamento.gateway.StatusGateway;
 
@@ -325,7 +325,7 @@ class PagamentoServiceTest {
                 () -> service.processarEventoGateway(evento, GatewayFake.NOME));
         assertEquals(StatusPagamento.AGUARDANDO_PAGAMENTO, statusDoPagamento(pix.getId()));
 
-        doReturn(gatewayReal(pix.getGatewayPaymentId())).when(gateway).consultar(anyString());
+        doReturn(cobrancaPaga(pix.getGatewayPaymentId())).when(gateway).consultar(anyString());
         service.processarEventoGateway(evento, GatewayFake.NOME);
 
         assertEquals(StatusPagamento.PAGO, statusDoPagamento(pix.getId()));
@@ -391,14 +391,12 @@ class PagamentoServiceTest {
         Long pedidoId = novoPedido();
         String chave = chave();
         service.iniciar(pedidoId, login, pix(), chave);
-        String dono = login;
 
         criarCliente();
 
         assertThrows(ResourceNotFoundException.class, () -> service.iniciar(pedidoId, login, pix(), chave));
         Long pedidoDoIntruso = novoPedido();
         assertThrows(BusinessRuleViolationException.class, () -> service.iniciar(pedidoDoIntruso, login, pix(), chave));
-        assertNotEquals(dono, login);
     }
 
     @Test
@@ -661,9 +659,8 @@ class PagamentoServiceTest {
         return UUID.randomUUID().toString();
     }
 
-    private leepans.service.pagamento.gateway.ResultadoCobranca gatewayReal(String id) {
-        return new leepans.service.pagamento.gateway.ResultadoCobranca(id, StatusGateway.PAGO, null, null, null, null,
-                null, null, "{}");
+    private static ResultadoCobranca cobrancaPaga(String id) {
+        return new ResultadoCobranca(id, StatusGateway.PAGO, null, null, null, null, null, null, "{}");
     }
 
     private Long novoPedido() {
